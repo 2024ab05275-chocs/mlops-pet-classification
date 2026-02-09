@@ -1,0 +1,67 @@
+name: CI-CD
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  build-test-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest -q
+
+      - name: Create dummy model for build
+        run: python scripts/create_dummy_model.py
+
+      - name: Log in to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: |
+          IMAGE=ghcr.io/2024ab05275-chocs/mlops-pet-classification
+          docker build -t $IMAGE:latest -t $IMAGE:${{ github.sha }} .
+
+      - name: Push Docker image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          IMAGE=ghcr.io/2024ab05275-chocs/mlops-pet-classification
+          docker push $IMAGE:latest
+          docker push $IMAGE:${{ github.sha }}
+
+      - name: Deploy with Docker Compose
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          docker compose -f deploy/docker-compose.yml up -d
+          sleep 5
+
+      - name: Smoke tests
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: bash scripts/smoke_test.sh
+
+      - name: Cleanup
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: docker compose -f deploy/docker-compose.yml down

@@ -1,0 +1,23 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+.env
+.ipynb_checkpoints/
+.DS_Store
+
+# Data & model artifacts
+/data/raw/
+/data/processed/
+/models/
+/mlruns/
+
+# DVC
+.dvc/cache/
+
+# Docker
+*.tar
+
+# Local docs
+MLOPS_Assignment2.pdf

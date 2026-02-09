@@ -1,0 +1,30 @@
+stages:
+  download:
+    cmd: python scripts/download_data.py
+    deps:
+      - scripts/download_data.py
+    outs:
+      - data/raw
+  preprocess:
+    cmd: python scripts/preprocess.py --input data/raw --output data/processed --seed ${preprocess.seed}
+    deps:
+      - scripts/preprocess.py
+      - src/utils/preprocess.py
+      - data/raw
+    outs:
+      - data/processed
+    params:
+      - preprocess.seed
+  train:
+    cmd: python scripts/train.py --data data/processed --epochs ${train.epochs} --batch-size ${train.batch_size} --lr ${train.lr}
+    deps:
+      - scripts/train.py
+      - src/utils/model_utils.py
+      - data/processed
+    outs:
+      - models/model.pth
+      - models/metadata.json
+    params:
+      - train.epochs
+      - train.batch_size
+      - train.lr

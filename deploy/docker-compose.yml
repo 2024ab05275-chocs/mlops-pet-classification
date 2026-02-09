@@ -1,0 +1,6 @@
+services:
+  pet-classifier:
+    image: ghcr.io/2024ab05275-chocs/mlops-pet-classification:latest
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
