@@ -10,7 +10,7 @@ __pycache__/
 # Data & model artifacts
 /data/raw/
 /data/processed/
-/models/
+/models/.gitkeep
 /mlruns/
 
 # DVC
