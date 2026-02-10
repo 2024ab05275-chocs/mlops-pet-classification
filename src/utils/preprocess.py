@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 from typing import Tuple
 
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 
 
 VALID_EXTS = {".jpg", ".jpeg", ".png"}
@@ -16,10 +16,13 @@ def _is_image_file(path: Path) -> bool:
 
 def resize_and_save(src_path: Path, dst_path: Path, size: Tuple[int, int] = (224, 224)) -> None:
     dst_path.parent.mkdir(parents=True, exist_ok=True)
-    with Image.open(src_path) as img:
-        img = img.convert("RGB")
-        img = img.resize(size)
-        img.save(dst_path)
+    try:
+        with Image.open(src_path) as img:
+            img = img.convert("RGB")
+            img = img.resize(size)
+            img.save(dst_path)
+    except (UnidentifiedImageError, OSError) as e:
+        print(f"[warn] Skipping corrupt image: {src_path} ({e})")
 
 
 def _collect_class_dirs(raw_dir: Path) -> Tuple[Path, Path]:
