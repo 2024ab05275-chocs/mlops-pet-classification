@@ -79,3 +79,6 @@ GitHub Actions builds, tests, pushes to GHCR, deploys with Docker Compose, and r
 ## Notes
 - Do not commit large datasets to Git. Use DVC.
 - Model artifacts are saved to `models/` and logged in MLflow.
+
+## One-Command Local Pipeline
+`bash scripts/run_pipeline.sh`
