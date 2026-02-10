@@ -16,7 +16,7 @@ stages:
     params:
       - preprocess.seed
   train:
-    cmd: python scripts/train.py --data data/processed --epochs ${train.epochs} --batch-size ${train.batch_size} --lr ${train.lr}
+    cmd: python scripts/train.py --data data/processed --epochs ${train.epochs} --batch-size ${train.batch_size} --lr ${train.lr} --model ${train.model} --image-size ${train.image_size}
     deps:
       - scripts/train.py
       - src/utils/model_utils.py

@@ -119,8 +119,8 @@ def main():
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--lr", type=float, default=1e-3)
-    parser.add_argument("--model", type=str, default="cnn", choices=["cnn", "logreg"])
-    parser.add_argument("--image-size", type=int, default=224)
+    parser.add_argument("--model", type=str, default="logreg", choices=["cnn", "logreg"])
+    parser.add_argument("--image-size", type=int, default=64)
     args = parser.parse_args()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"

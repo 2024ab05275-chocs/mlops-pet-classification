@@ -4,3 +4,5 @@ train:
   epochs: 3
   batch_size: 32
   lr: 0.001
+  model: logreg
+  image_size: 64
