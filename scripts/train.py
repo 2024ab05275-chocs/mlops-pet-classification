@@ -174,7 +174,7 @@ def main():
                 optimizer.step()
                 running_loss += loss.item()
 
-            val_acc, _, _ = evaluate(model, val_loader, device)
+            val_acc, _, _, _ = evaluate(model, val_loader, device)
             train_loss = running_loss / max(1, len(train_loader))
             train_losses.append(train_loss)
             print(f"  train_loss={train_loss:.4f} val_acc={val_acc:.4f}")
