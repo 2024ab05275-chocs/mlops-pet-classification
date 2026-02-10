@@ -12,6 +12,9 @@ fi
 : "${KAGGLE_KEY:?KAGGLE_KEY not set}"
 : "${KAGGLE_DATASET:=bhavikjikadara/dog-and-cat-classification-dataset}"
 
+echo '[step 0] Run unit tests'
+pytest -q
+
 echo '[step 1] Download dataset (Kaggle) if not present'
 python scripts/download_data.py
 
