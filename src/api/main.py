@@ -24,8 +24,8 @@ _total_latency = 0.0
 
 @app.on_event("startup")
 def _load():
-    global _model, _classes
-    _model, _classes = load_model(MODEL_PATH, META_PATH)
+    global _model, _classes, _image_size
+    _model, _classes, _image_size = load_model(MODEL_PATH, META_PATH)
 
 
 @app.get("/health")
@@ -39,7 +39,7 @@ async def predict(file: UploadFile = File(...)):
     start = time.time()
     content = await file.read()
     image = Image.open(io.BytesIO(content)).convert("RGB")
-    result = predict_image(_model, image, _classes)
+    result = predict_image(_model, image, _classes, image_size=_image_size)
     latency = time.time() - start
 
     _request_count += 1

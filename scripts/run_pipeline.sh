@@ -19,6 +19,6 @@ echo '[step 2] Preprocess data (resize, split, cap 10k balanced)'
 PYTHONPATH=. python scripts/preprocess.py --max-total 10000
 
 echo '[step 3] Train model and log experiments (MLflow)'
-PYTHONPATH=. python scripts/train.py --epochs 3
+PYTHONPATH=. python scripts/train.py --epochs 3 --model logreg --image-size 64
 
 echo '[step 4] Done. Model saved in models/ and MLflow runs in mlruns/'

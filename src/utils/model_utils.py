@@ -34,6 +34,18 @@ class SimpleCNN(nn.Module):
         x = self.features(x)
         return self.classifier(x)
 
+class LogisticRegression(nn.Module):
+    def __init__(self, input_dim: int, num_classes: int = 2):
+        super().__init__()
+        self.flatten = nn.Flatten()
+        self.linear = nn.Linear(input_dim, num_classes)
+
+    def forward(self, x):
+        x = self.flatten(x)
+        return self.linear(x)
+
+
+
 
 def default_transform(image_size: int = 224) -> transforms.Compose:
     return transforms.Compose([
@@ -42,19 +54,25 @@ def default_transform(image_size: int = 224) -> transforms.Compose:
     ])
 
 
-def load_model(model_path: Path, metadata_path: Path, device: str = "cpu") -> Tuple[nn.Module, List[str]]:
+def load_model(model_path: Path, metadata_path: Path, device: str = "cpu") -> Tuple[nn.Module, List[str], int]:
     with open(metadata_path, "r", encoding="utf-8") as f:
         meta: Dict = json.load(f)
     classes = meta["classes"]
-    model = SimpleCNN(num_classes=len(classes))
+    image_size = int(meta.get("image_size", 224))
+    model_type = meta.get("model_type", "cnn")
+    if model_type == "logreg":
+        input_dim = 3 * image_size * image_size
+        model = LogisticRegression(input_dim=input_dim, num_classes=len(classes))
+    else:
+        model = SimpleCNN(num_classes=len(classes))
     state = torch.load(model_path, map_location=device)
     model.load_state_dict(state)
     model.eval()
-    return model, classes
+    return model, classes, image_size
 
 
-def predict_image(model: nn.Module, image: Image.Image, classes: List[str]) -> Dict:
-    transform = default_transform()
+def predict_image(model: nn.Module, image: Image.Image, classes: List[str], image_size: int = 224) -> Dict:
+    transform = default_transform(image_size=image_size)
     tensor = transform(image).unsqueeze(0)
     with torch.no_grad():
         logits = model(tensor)

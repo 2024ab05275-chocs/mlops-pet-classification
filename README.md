@@ -82,3 +82,7 @@ GitHub Actions builds, tests, pushes to GHCR, deploys with Docker Compose, and r
 
 ## One-Command Local Pipeline
 `bash scripts/run_pipeline.sh`
+
+## Fast CPU Training
+Use logistic regression on 64x64 images for faster CPU training:
+`PYTHONPATH=. python scripts/train.py --epochs 3 --model logreg --image-size 64`

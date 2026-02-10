@@ -13,15 +13,14 @@ from torch.utils.data import DataLoader
 from src.utils.model_utils import SimpleCNN
 
 
-def get_dataloaders(data_dir: Path, batch_size: int = 32):
-    train_transform = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomRotation(10),
-        transforms.ToTensor(),
-    ])
+def get_dataloaders(data_dir: Path, batch_size: int = 32, image_size: int = 224, augment: bool = True):
+    train_tf = [transforms.Resize((image_size, image_size))]
+    if augment:
+        train_tf += [transforms.RandomHorizontalFlip(), transforms.RandomRotation(10)]
+    train_tf += [transforms.ToTensor()]
+    train_transform = transforms.Compose(train_tf)
     eval_transform = transforms.Compose([
-        transforms.Resize((224, 224)),
+        transforms.Resize((image_size, image_size)),
         transforms.ToTensor(),
     ])
 
@@ -62,16 +61,30 @@ def main():
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--model", type=str, default="cnn", choices=["cnn", "logreg"])
+    parser.add_argument("--image-size", type=int, default=224)
     args = parser.parse_args()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"[step 3.1] Device: {device}")
     data_dir = Path(args.data)
     print(f"[step 3.2] Loading data from {data_dir}")
-    train_loader, val_loader, test_loader, classes = get_dataloaders(data_dir, args.batch_size)
+
+    image_size = args.image_size
+    if args.model == "logreg" and args.image_size == 224:
+        image_size = 64
+        print("[step 3.2.1] Using smaller image_size=64 for logreg")
+
+    train_loader, val_loader, test_loader, classes = get_dataloaders(
+        data_dir, args.batch_size, image_size=image_size, augment=(args.model == "cnn")
+    )
     print(f"[step 3.3] Classes: {classes}")
 
-    model = SimpleCNN(num_classes=len(classes)).to(device)
+    if args.model == "logreg":
+        input_dim = 3 * image_size * image_size
+        model = nn.Sequential(nn.Flatten(), nn.Linear(input_dim, len(classes))).to(device)
+    else:
+        model = SimpleCNN(num_classes=len(classes)).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
@@ -85,6 +98,8 @@ def main():
             "batch_size": args.batch_size,
             "lr": args.lr,
             "device": device,
+            "model": args.model,
+            "image_size": image_size,
         })
 
         for epoch in range(args.epochs):
@@ -118,7 +133,7 @@ def main():
         meta_path = models_dir / "metadata.json"
         torch.save(model.state_dict(), model_path)
         with open(meta_path, "w", encoding="utf-8") as f:
-            json.dump({"classes": classes, "image_size": 224}, f)
+            json.dump({"classes": classes, "image_size": image_size, "model_type": args.model}, f)
 
         print("[step 3.8] Logging artifacts to MLflow")
         mlflow.log_artifact(str(model_path))
