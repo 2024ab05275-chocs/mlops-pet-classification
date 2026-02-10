@@ -15,9 +15,10 @@ def main():
     input_dir = Path(args.input)
     output_dir = Path(args.output)
 
+    print("[step 2.1] Input/Output")
     print(f"Input: {input_dir}")
     print(f"Output: {output_dir}")
-    print("Starting preprocessing...")
+    print(f"[step 2.2] Starting preprocessing (max_total={args.max_total})")
     clear_processed(output_dir)
     split_dataset(input_dir, output_dir, seed=args.seed, max_total=args.max_total)
     print(f"Preprocessed data written to {output_dir}")

@@ -65,13 +65,17 @@ def main():
     args = parser.parse_args()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"[step 3.1] Device: {device}")
     data_dir = Path(args.data)
+    print(f"[step 3.2] Loading data from {data_dir}")
     train_loader, val_loader, test_loader, classes = get_dataloaders(data_dir, args.batch_size)
+    print(f"[step 3.3] Classes: {classes}")
 
     model = SimpleCNN(num_classes=len(classes)).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
+    print("[step 3.4] Initializing MLflow tracking")
     mlflow.set_tracking_uri("file:./mlruns")
     mlflow.set_experiment("pet-classifier")
 
@@ -84,6 +88,7 @@ def main():
         })
 
         for epoch in range(args.epochs):
+            print(f"[step 3.5] Epoch {epoch+1}/{args.epochs}")
             model.train()
             running_loss = 0.0
             for imgs, labels in train_loader:
@@ -96,12 +101,16 @@ def main():
                 running_loss += loss.item()
 
             val_acc, _, _ = evaluate(model, val_loader, device)
-            mlflow.log_metric("train_loss", running_loss / max(1, len(train_loader)), step=epoch)
+            train_loss = running_loss / max(1, len(train_loader))
+            print(f"  train_loss={train_loss:.4f} val_acc={val_acc:.4f}")
+            mlflow.log_metric("train_loss", train_loss, step=epoch)
             mlflow.log_metric("val_acc", val_acc, step=epoch)
 
+        print("[step 3.6] Evaluating on test set")
         test_acc, y_true, y_pred = evaluate(model, test_loader, device)
         cm = confusion_matrix(y_true, y_pred)
         mlflow.log_metric("test_acc", test_acc)
+        print(f"[step 3.7] Test accuracy: {test_acc:.4f}")
 
         models_dir = Path("models")
         models_dir.mkdir(exist_ok=True)
@@ -111,6 +120,7 @@ def main():
         with open(meta_path, "w", encoding="utf-8") as f:
             json.dump({"classes": classes, "image_size": 224}, f)
 
+        print("[step 3.8] Logging artifacts to MLflow")
         mlflow.log_artifact(str(model_path))
         mlflow.log_artifact(str(meta_path))
 
