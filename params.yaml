@@ -1,8 +1,9 @@
 preprocess:
   seed: 42
 train:
-  epochs: 3
+  epochs: 10
   batch_size: 32
   lr: 0.001
   model: logreg
   image_size: 64
+  early_stop_patience: 3

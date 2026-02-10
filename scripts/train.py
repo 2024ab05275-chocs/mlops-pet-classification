@@ -116,11 +116,12 @@ def save_loss_curve(losses, out_path: Path):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=str, default="data/processed")
-    parser.add_argument("--epochs", type=int, default=3)
+    parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--model", type=str, default="logreg", choices=["cnn", "logreg"])
     parser.add_argument("--image-size", type=int, default=64)
+    parser.add_argument("--early-stop-patience", type=int, default=3)
     args = parser.parse_args()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -163,6 +164,9 @@ def main():
         })
 
         train_losses = []
+        best_val_acc = -1.0
+        best_state = None
+        patience_left = args.early_stop_patience
         for epoch in range(args.epochs):
             print(f"[step 3.5] Epoch {epoch+1}/{args.epochs}")
             model.train()
@@ -182,6 +186,20 @@ def main():
             print(f"  train_loss={train_loss:.4f} val_acc={val_acc:.4f}")
             mlflow.log_metric("train_loss", train_loss, step=epoch)
             mlflow.log_metric("val_acc", val_acc, step=epoch)
+
+            if val_acc > best_val_acc:
+                best_val_acc = val_acc
+                best_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
+                patience_left = args.early_stop_patience
+            else:
+                patience_left -= 1
+                if patience_left <= 0:
+                    print(f"[step 3.5.1] Early stopping triggered (best_val_acc={best_val_acc:.4f})")
+                    break
+
+        if best_state is not None:
+            model.load_state_dict(best_state)
+            print(f"[step 3.5.2] Loaded best model (val_acc={best_val_acc:.4f})")
 
         print("[step 3.6] Evaluating on test set")
         test_acc, y_true, y_pred, y_probs = evaluate(model, test_loader, device)

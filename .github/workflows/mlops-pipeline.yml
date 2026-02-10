@@ -89,7 +89,7 @@ jobs:
           name: data-artifacts
           path: .
       - name: Train Logistic Regression (fast CPU)
-        run: PYTHONPATH=. python scripts/train.py --epochs 3 --model logreg --image-size 64
+        run: PYTHONPATH=. python scripts/train.py --epochs 10 --model logreg --image-size 64 --early-stop-patience 3
       - name: Upload model artifacts
         uses: actions/upload-artifact@v4
         with:
