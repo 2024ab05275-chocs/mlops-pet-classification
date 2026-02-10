@@ -36,7 +36,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/python-setup
       - name: Run Pytest Suite
-        run: pytest tests/ -v
+        run: PYTHONPATH=. pytest tests/ -v
 
 #########################################################
 # 3. DATA PIPELINE (Ingestion + Preprocessing)
