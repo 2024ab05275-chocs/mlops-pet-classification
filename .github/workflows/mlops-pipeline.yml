@@ -48,12 +48,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/python-setup
+      - name: Write GDrive service account JSON
+        if: ${{ secrets.DVC_GDRIVE_SERVICE_ACCOUNT_JSON != '' }}
+        run: |
+          mkdir -p .dvc
+          echo "${{ secrets.DVC_GDRIVE_SERVICE_ACCOUNT_JSON }}" > .dvc/gdrive-sa.json
+          dvc remote modify gdrive use_service_account true
+          dvc remote modify gdrive gdrive_service_account_json_file_path .dvc/gdrive-sa.json
+
       - name: Data Acquisition (DVC or Kaggle)
         env:
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
           KAGGLE_DATASET: bhavikjikadara/dog-and-cat-classification-dataset
-          DVC_GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.DVC_GDRIVE_SERVICE_ACCOUNT_JSON }}
         run: |
           set -e
           if dvc remote list | grep -q .; then
