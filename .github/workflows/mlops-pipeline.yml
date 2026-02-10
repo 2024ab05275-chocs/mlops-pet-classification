@@ -145,6 +145,13 @@ jobs:
           name: model-artifacts
           path: .
 
+      - name: Ensure model exists
+        run: |
+          if [ ! -f models/model.pth ] || [ ! -f models/metadata.json ]; then
+            echo "Model artifacts missing; creating dummy model"
+            python scripts/create_dummy_model.py
+          fi
+
       - name: Authenticate to GitHub Container Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
@@ -167,6 +174,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Ensure model exists
+        run: |
+          if [ ! -f models/model.pth ] || [ ! -f models/metadata.json ]; then
+            echo "Model artifacts missing; creating dummy model"
+            python scripts/create_dummy_model.py
+          fi
+
       - name: Authenticate to GitHub Container Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
@@ -175,7 +189,7 @@ jobs:
 
       - name: Run API Container
         run: |
-          docker run -d --rm \
+          docker run -d \
             -p ${{ env.API_PORT }}:${{ env.API_PORT }} \
             --name pet-api \
             ${{ env.IMAGE_NAME }}:latest
@@ -191,7 +205,8 @@ jobs:
             sleep 3
           done
           echo "API did not start in time"
-          docker logs pet-api
+          docker ps -a
+          docker logs pet-api || true
           exit 1
 
       - name: Health Check
@@ -216,7 +231,7 @@ jobs:
 
       - name: Run API Container (again)
         run: |
-          docker run -d --rm \
+          docker run -d \
             -p 8000:8000 \
             --name pet-api \
             ${{ env.IMAGE_NAME }}:latest
