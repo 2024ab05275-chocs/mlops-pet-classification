@@ -23,7 +23,7 @@ This project expects a Kaggle dataset containing `Cat` and `Dog` image folders.
 Set environment variables:
 - `KAGGLE_USERNAME`
 - `KAGGLE_KEY`
-- `KAGGLE_DATASET` (example: `tunguz/cats-and-dogs`)
+- `KAGGLE_DATASET` (example: `bhavikjikadara/dog-and-cat-classification-dataset`)
 
 Download:
 `python scripts/download_data.py`

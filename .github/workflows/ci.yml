@@ -34,7 +34,7 @@ jobs:
         env:
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
-          KAGGLE_DATASET: ${{ secrets.KAGGLE_DATASET }}
+          KAGGLE_DATASET: bhavikjikadara/dog-and-cat-classification-dataset
         run: |
           set -e
           if dvc remote list | grep -q .; then
