@@ -14,7 +14,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from src.utils.model_utils import SimpleCNN
+from src.utils.model_utils import SimpleCNN, LogisticRegression
 
 
 def get_dataloaders(data_dir: Path, batch_size: int = 32, image_size: int = 224, augment: bool = True):
@@ -141,7 +141,7 @@ def main():
 
     if args.model == "logreg":
         input_dim = 3 * image_size * image_size
-        model = nn.Sequential(nn.Flatten(), nn.Linear(input_dim, len(classes))).to(device)
+        model = LogisticRegression(input_dim=input_dim, num_classes=len(classes)).to(device)
     else:
         model = SimpleCNN(num_classes=len(classes)).to(device)
     criterion = nn.CrossEntropyLoss()
