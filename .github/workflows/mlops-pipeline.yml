@@ -1,0 +1,245 @@
+name: MLOps Pet Classification Production Pipeline
+
+on:
+  push:
+    branches: ["main", "ci-mlops-pipeline"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository }}/pet-classifier-api
+  API_PORT: 8000
+
+#########################################################
+# 1. CODE QUALITY (Linting & Static Checks)
+#########################################################
+jobs:
+  code_quality_checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/python-setup
+      - name: Run Linting
+        run: bash scripts/run_lint.sh
+
+#########################################################
+# 2. UNIT TESTING
+#########################################################
+  unit_tests:
+    needs: code_quality_checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/python-setup
+      - name: Run Pytest Suite
+        run: pytest tests/ -v
+
+#########################################################
+# 3. DATA PIPELINE (Ingestion + Preprocessing)
+#########################################################
+  data_pipeline:
+    needs: unit_tests
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/python-setup
+      - name: Data Acquisition (DVC or Kaggle)
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          KAGGLE_DATASET: bhavikjikadara/dog-and-cat-classification-dataset
+          DVC_GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.DVC_GDRIVE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -e
+          if dvc remote list | grep -q .; then
+            echo "DVC remote configured; attempting pull"
+            dvc pull -q || true
+          else
+            echo "No DVC remote configured; skipping pull"
+          fi
+
+          if [ -d data/raw ] && [ "$(find data/raw -type f | wc -l)" -gt 0 ]; then
+            echo "Data already present, skipping Kaggle download"
+          else
+            echo "Downloading from Kaggle"
+            python scripts/download_data.py
+          fi
+
+      - name: Data Preprocessing
+        run: PYTHONPATH=. python scripts/preprocess.py --max-total 10000
+
+      - name: Upload data artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: data-artifacts
+          path: |
+            data/processed
+            reports
+            mlruns
+
+#########################################################
+# 4. MODEL TRAINING
+#########################################################
+  model_training:
+    needs: data_pipeline
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/python-setup
+      - uses: actions/download-artifact@v4
+        with:
+          name: data-artifacts
+          path: .
+      - name: Train Logistic Regression (fast CPU)
+        run: PYTHONPATH=. python scripts/train.py --epochs 3 --model logreg --image-size 64
+      - name: Upload model artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-artifacts
+          path: |
+            models
+            reports
+            mlruns
+
+#########################################################
+# 5. EXPERIMENT TRACKING
+#########################################################
+  experiment_tracking:
+    needs: model_training
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: model-artifacts
+          path: .
+      - name: Log Metrics & Parameters
+        run: python -c "import json, pathlib; p=pathlib.Path('reports/metrics.json'); print(p.read_text())"
+
+#########################################################
+# 6. MODEL ARTIFACT MANAGEMENT
+#########################################################
+  model_artifact_management:
+    needs: experiment_tracking
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: model-artifacts
+          path: .
+      - name: Save Model Artifacts
+        run: ls -la models
+
+#########################################################
+# 7. CONTAINER BUILD & PUBLISH
+#########################################################
+  container_build_and_publish:
+    needs: model_artifact_management
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: model-artifacts
+          path: .
+
+      - name: Authenticate to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build & Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+#########################################################
+# 8. DEPLOYMENT & Validation
+#########################################################
+  deployment-and-validation:
+    needs: container_build_and_publish
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Pull Docker Image
+        run: docker pull ${{ env.IMAGE_NAME }}:latest
+
+      - name: Run API Container
+        run: |
+          docker run -d --rm \
+            -p ${{ env.API_PORT }}:${{ env.API_PORT }} \
+            --name pet-api \
+            ${{ env.IMAGE_NAME }}:latest
+
+      - name: Wait for API to be ready
+        run: |
+          for i in {1..10}; do
+            if curl -s http://localhost:8000/health; then
+              echo "API is ready"
+              exit 0
+            fi
+            echo "Waiting for API..."
+            sleep 3
+          done
+          echo "API did not start in time"
+          docker logs pet-api
+          exit 1
+
+      - name: Health Check
+        run: curl -f http://localhost:8000/health
+
+      - name: Inference Test
+        run: |
+          python scripts/create_sample_image.py
+          curl -f -X POST http://localhost:8000/predict \
+            -F "file=@scripts/sample.jpg"
+
+#########################################################
+# 10. OBSERVABILITY & LOGGING
+#########################################################
+  observability_and_logging:
+    needs: deployment-and-validation
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Run API Container (again)
+        run: |
+          docker run -d --rm \
+            -p 8000:8000 \
+            --name pet-api \
+            ${{ env.IMAGE_NAME }}:latest
+          sleep 10
+
+      - name: Fetch Prometheus Metrics
+        run: curl -f http://localhost:8000/metrics
+
+      - name: Collect API Logs
+        if: always()
+        run: docker logs pet-api > api_logs.txt
+
+      - name: Upload Logs Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-logs
+          path: api_logs.txt

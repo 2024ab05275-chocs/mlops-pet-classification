@@ -4,8 +4,9 @@ import time
 from pathlib import Path
 
 from fastapi import FastAPI, File, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from PIL import Image
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 
 from src.utils.model_utils import load_model, predict_image
 
@@ -17,6 +18,9 @@ app = FastAPI(title="Pet Classifier")
 MODEL_DIR = Path("models")
 MODEL_PATH = MODEL_DIR / "model.pth"
 META_PATH = MODEL_DIR / "metadata.json"
+
+REQUEST_COUNT = Counter("requests_total", "Total prediction requests")
+REQUEST_LATENCY = Histogram("request_latency_seconds", "Prediction latency")
 
 _request_count = 0
 _total_latency = 0.0
@@ -33,6 +37,11 @@ def health():
     return {"status": "ok"}
 
 
+@app.get("/metrics")
+def metrics():
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     global _request_count, _total_latency
@@ -41,6 +50,9 @@ async def predict(file: UploadFile = File(...)):
     image = Image.open(io.BytesIO(content)).convert("RGB")
     result = predict_image(_model, image, _classes, image_size=_image_size)
     latency = time.time() - start
+
+    REQUEST_COUNT.inc()
+    REQUEST_LATENCY.observe(latency)
 
     _request_count += 1
     _total_latency += latency

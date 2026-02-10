@@ -10,6 +10,8 @@ import torch.optim as optim
 from sklearn.metrics import confusion_matrix, precision_score, recall_score, f1_score, roc_curve, auc
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from src.utils.model_utils import SimpleCNN
