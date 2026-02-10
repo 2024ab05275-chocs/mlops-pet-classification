@@ -1,4 +1,5 @@
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -8,21 +9,23 @@ from src.utils.preprocess import clear_processed, split_dataset
 
 
 def _data_signature(input_dir: Path, max_total: int, seed: int) -> dict:
+    hasher = hashlib.sha256()
     count = 0
-    latest_mtime = 0.0
     for root, _, files in os.walk(input_dir):
-        for name in files:
+        for name in sorted(files):
             p = Path(root) / name
             try:
                 stat = p.stat()
             except FileNotFoundError:
                 continue
+            rel = str(p.relative_to(input_dir)).replace("\\", "/")
+            hasher.update(rel.encode("utf-8"))
+            hasher.update(str(stat.st_size).encode("utf-8"))
+            hasher.update(str(int(stat.st_mtime)).encode("utf-8"))
             count += 1
-            if stat.st_mtime > latest_mtime:
-                latest_mtime = stat.st_mtime
     return {
         "file_count": count,
-        "latest_mtime": latest_mtime,
+        "content_hash": hasher.hexdigest(),
         "max_total": max_total,
         "seed": seed,
     }
