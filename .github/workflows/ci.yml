@@ -29,6 +29,29 @@ jobs:
       - name: Run tests
         run: pytest -q
 
+      - name: Get data (DVC or Kaggle)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          KAGGLE_DATASET: ${{ secrets.KAGGLE_DATASET }}
+        run: |
+          set -e
+          if dvc remote list | grep -q .; then
+            echo "DVC remote configured; attempting pull"
+            dvc pull -q || true
+          else
+            echo "No DVC remote configured; skipping pull"
+          fi
+
+          if [ -d data/raw ] && [ "$(find data/raw -type f | wc -l)" -gt 0 ]; then
+            echo "Data already present, skipping Kaggle download"
+          else
+            echo "Downloading from Kaggle"
+            python scripts/download_data.py
+            PYTHONPATH=. python scripts/preprocess.py
+          fi
+
       - name: Create dummy model for build
         run: python scripts/create_dummy_model.py
 
