@@ -31,7 +31,7 @@ Download:
 ## Preprocessing
 Resizes to 224x224 RGB, applies augmentation for train, and splits 80/10/10.
 
-`python scripts/preprocess.py --input data/raw --output data/processed`
+`python scripts/preprocess.py --input data/raw --output data/processed --max-total 10000`
 
 ## Training (MLflow)
 `python scripts/train.py --data data/processed --epochs 3`

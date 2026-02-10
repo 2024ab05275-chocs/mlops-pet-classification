@@ -9,6 +9,7 @@ def main():
     parser.add_argument("--input", type=str, default="data/raw")
     parser.add_argument("--output", type=str, default="data/processed")
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--max-total", type=int, default=10000)
     args = parser.parse_args()
 
     input_dir = Path(args.input)
@@ -18,7 +19,7 @@ def main():
     print(f"Output: {output_dir}")
     print("Starting preprocessing...")
     clear_processed(output_dir)
-    split_dataset(input_dir, output_dir, seed=args.seed)
+    split_dataset(input_dir, output_dir, seed=args.seed, max_total=args.max_total)
     print(f"Preprocessed data written to {output_dir}")
 
 

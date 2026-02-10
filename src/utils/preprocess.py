@@ -33,13 +33,16 @@ def _collect_class_dirs(raw_dir: Path) -> Tuple[Path, Path]:
     raise FileNotFoundError("Could not find Cat/Dog folders in raw data directory")
 
 
-def split_dataset(raw_dir: Path, output_dir: Path, seed: int = 42, splits=(0.8, 0.1, 0.1)) -> None:
+def split_dataset(raw_dir: Path, output_dir: Path, seed: int = 42, splits=(0.8, 0.1, 0.1), max_total: int = 10000) -> None:
     random.seed(seed)
     cat_dir, dog_dir = _collect_class_dirs(raw_dir)
 
     def _split_class(class_dir: Path, class_name: str) -> None:
         images = [p for p in class_dir.iterdir() if p.is_file() and _is_image_file(p)]
         random.shuffle(images)
+        per_class = max_total // 2 if max_total else None
+        if per_class is not None and len(images) > per_class:
+            images = images[:per_class]
         n = len(images)
         n_train = int(n * splits[0])
         n_val = int(n * splits[1])
