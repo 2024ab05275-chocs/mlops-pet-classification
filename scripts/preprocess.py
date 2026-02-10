@@ -57,9 +57,7 @@ def main():
     input_dir = Path(args.input)
     output_dir = Path(args.output)
 
-    print("[step 2.1] Input/Output")
-    print(f"Input: {input_dir}")
-    print(f"Output: {output_dir}")
+    print(f"[step 2.1] Input: {input_dir} | Output: {output_dir}")
     print("[step 2.2] Checking if preprocessing is needed")
     meta_path = output_dir / ".preprocess_meta.json"
     current = _data_signature(input_dir, args.max_total, args.seed)
