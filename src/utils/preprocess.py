@@ -1,5 +1,6 @@
 import random
 import shutil
+import warnings
 from pathlib import Path
 from typing import Tuple
 
@@ -7,6 +8,9 @@ from PIL import Image, UnidentifiedImageError
 
 
 VALID_EXTS = {".jpg", ".jpeg", ".png"}
+
+# Suppress PIL truncated file warnings (we skip corrupted files below)
+warnings.filterwarnings("ignore", message="Truncated File Read")
 
 
 def _is_image_file(path: Path) -> bool:
