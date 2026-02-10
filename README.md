@@ -89,3 +89,9 @@ Use logistic regression on 64x64 images for faster CPU training:
 
 ## Reports
 Training outputs and plots are saved in `reports/` (confusion matrix, ROC, loss curve, metrics.json).
+
+## DVC GDrive Service Account (Local)
+
+Set and run:
+`export DVC_GDRIVE_SERVICE_ACCOUNT_JSON=/path/to/service-account.json`
+`bash scripts/configure_dvc_gdrive.sh`

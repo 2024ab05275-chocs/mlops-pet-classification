@@ -18,6 +18,11 @@ bash scripts/run_lint.sh
 echo '[step 0.1] Run unit tests'
 pytest -q
 
+if [[ -n "${DVC_GDRIVE_SERVICE_ACCOUNT_JSON:-}" ]]; then
+  echo '[step 0.2] Configure DVC GDrive service account'
+  bash scripts/configure_dvc_gdrive.sh
+fi
+
 echo '[step 1] Download dataset (Kaggle) if not present'
 python scripts/download_data.py
 
