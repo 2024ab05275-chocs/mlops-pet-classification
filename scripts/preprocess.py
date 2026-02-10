@@ -14,6 +14,9 @@ def main():
     input_dir = Path(args.input)
     output_dir = Path(args.output)
 
+    print(f"Input: {input_dir}")
+    print(f"Output: {output_dir}")
+    print("Starting preprocessing...")
     clear_processed(output_dir)
     split_dataset(input_dir, output_dir, seed=args.seed)
     print(f"Preprocessed data written to {output_dir}")

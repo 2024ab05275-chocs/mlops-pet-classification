@@ -47,6 +47,8 @@ def split_dataset(raw_dir: Path, output_dir: Path, seed: int = 42, splits=(0.8, 
         val_imgs = images[n_train:n_train + n_val]
         test_imgs = images[n_train + n_val:]
 
+        print(f"{class_name}: total={n} train={len(train_imgs)} val={len(val_imgs)} test={len(test_imgs)}")
+
         for split_name, split_imgs in [("train", train_imgs), ("val", val_imgs), ("test", test_imgs)]:
             for img_path in split_imgs:
                 dst = output_dir / split_name / class_name / img_path.name
