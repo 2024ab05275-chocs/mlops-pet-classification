@@ -86,3 +86,6 @@ GitHub Actions builds, tests, pushes to GHCR, deploys with Docker Compose, and r
 ## Fast CPU Training
 Use logistic regression on 64x64 images for faster CPU training:
 `PYTHONPATH=. python scripts/train.py --epochs 3 --model logreg --image-size 64`
+
+## Reports
+Training outputs and plots are saved in `reports/` (confusion matrix, ROC, loss curve, metrics.json).
