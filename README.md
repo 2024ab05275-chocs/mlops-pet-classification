@@ -95,3 +95,21 @@ Training outputs and plots are saved in `reports/` (confusion matrix, ROC, loss 
 Set and run:
 `export DVC_GDRIVE_SERVICE_ACCOUNT_JSON=/path/to/service-account.json`
 `bash scripts/configure_dvc_gdrive.sh`
+
+
+## Kubernetes Ingress (Docker Desktop)
+Prereqs:
+- Enable Kubernetes in Docker Desktop
+- Install NGINX Ingress Controller
+  `kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml`
+
+Apply manifests:
+`kubectl apply -f deploy/k8s/deployment.yaml`
+`kubectl apply -f deploy/k8s/service.yaml`
+`kubectl apply -f deploy/k8s/ingress.yaml`
+
+Add host entry:
+`127.0.0.1 pet.local`
+
+Test:
+`curl http://pet.local/health`
