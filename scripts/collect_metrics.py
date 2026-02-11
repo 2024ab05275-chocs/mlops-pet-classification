@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import os
 import requests
 from PIL import Image
 
@@ -12,6 +13,7 @@ def main():
         img = Image.new("RGB", (224, 224), color=(120, 180, 200))
         img.save(sample)
     # Simulated requests with dummy labels
+    api_port = os.environ.get("API_PORT", "8002")
     samples = [
         {"path": "scripts/sample.jpg", "label": "Cat"},
         {"path": "scripts/sample.jpg", "label": "Dog"},
@@ -20,7 +22,7 @@ def main():
     results = []
     for s in samples:
         with open(s["path"], "rb") as f:
-            resp = requests.post("http://localhost:8000/predict", files={"file": f})
+            resp = requests.post(f"http://localhost:{api_port}/predict", files={"file": f})
         results.append({
             "true_label": s["label"],
             "prediction": resp.json().get("label"),

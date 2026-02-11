@@ -55,7 +55,7 @@ Build:
 `docker build -t pet-classifier:local .`
 
 Run:
-`docker run -p 8000:8000 pet-classifier:local`
+`docker run -p 8002:8000 pet-classifier:local`
 
 ## Docker Compose (Deployment)
 `docker compose -f deploy/docker-compose.yml up -d`

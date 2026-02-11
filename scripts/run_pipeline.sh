@@ -57,8 +57,9 @@ if docker ps -a --format '{{.Names}}' | grep -q '^pet-api$'; then
   docker rm -f pet-api
 fi
 
-kill_port 8000
-docker run -d -p 8000:8000 --name pet-api pet-classifier:local
+API_PORT=${API_PORT:-8002}
+kill_port $API_PORT
+docker run -d -p ${API_PORT}:8000 --name pet-api pet-classifier:local
 
 sleep 5
 
@@ -67,7 +68,7 @@ python scripts/create_sample_image.py
 
 # wait for health
 for i in {1..10}; do
-  if curl -sf http://localhost:8000/health > /dev/null; then
+  if curl -sf http://localhost:${API_PORT}/health > /dev/null; then
     echo "Health OK"
     break
   fi
@@ -80,13 +81,13 @@ for i in {1..10}; do
   fi
 done
 
-if ! curl -f -X POST -F "file=@scripts/sample.jpg" http://localhost:8000/predict; then
+if ! curl -f -X POST -F "file=@scripts/sample.jpg" http://localhost:${API_PORT}/predict; then
   echo "Predict failed"
   docker logs pet-api || true
   exit 1
 fi
 
-if ! curl -f http://localhost:8000/metrics; then
+if ! curl -f http://localhost:${API_PORT}/metrics; then
   echo "Metrics failed"
   docker logs pet-api || true
   exit 1

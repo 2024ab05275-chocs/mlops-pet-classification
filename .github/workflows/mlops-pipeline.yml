@@ -12,7 +12,7 @@ permissions:
 
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository }}/pet-classifier-api
-  API_PORT: 8000
+  API_PORT: 8002
 
 #########################################################
 # 1. CODE QUALITY (Linting & Static Checks)
@@ -198,7 +198,7 @@ jobs:
       - name: Wait for API to be ready
         run: |
           for i in {1..10}; do
-            if curl -s http://localhost:8000/health; then
+            if curl -s http://localhost:${{ env.API_PORT }}/health; then
               echo "API is ready"
               exit 0
             fi
@@ -211,12 +211,12 @@ jobs:
           exit 1
 
       - name: Health Check
-        run: curl -f http://localhost:8000/health
+        run: curl -f http://localhost:${{ env.API_PORT }}/health
 
       - name: Inference Test
         run: |
           python scripts/create_sample_image.py
-          curl -f -X POST http://localhost:8000/predict \
+          curl -f -X POST http://localhost:${{ env.API_PORT }}/predict \
             -F "file=@scripts/sample.jpg"
 
 #########################################################
@@ -239,7 +239,7 @@ jobs:
           sleep 10
 
       - name: Fetch Prometheus Metrics
-        run: curl -f http://localhost:8000/metrics
+        run: curl -f http://localhost:${{ env.API_PORT }}/metrics
 
       - name: Collect API Logs
         if: always()
