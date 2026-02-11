@@ -59,4 +59,14 @@ echo "[step 8] Stop container and MLflow UI"
 docker stop pet-api
 kill $MLFLOW_PID || true
 
+echo "[step 9] Apply Kubernetes manifests (Ingress)"
+if command -v kubectl >/dev/null 2>&1; then
+  kubectl apply -f deploy/k8s/deployment.yaml
+  kubectl apply -f deploy/k8s/service.yaml
+  kubectl apply -f deploy/k8s/ingress.yaml
+  echo "K8s applied. Test: curl http://pet.local/health (ensure /etc/hosts and ingress controller)"
+else
+  echo "kubectl not found; skipping K8s apply"
+fi
+
 echo "Pipeline completed. Model saved in models/ and MLflow runs in mlruns/"
