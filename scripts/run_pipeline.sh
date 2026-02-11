@@ -64,9 +64,33 @@ sleep 5
 
 echo "[step 7] Test endpoints"
 python scripts/create_sample_image.py
-curl -f http://localhost:8000/health
-curl -f -X POST -F "file=@scripts/sample.jpg" http://localhost:8000/predict
-curl -f http://localhost:8000/metrics
+
+# wait for health
+for i in {1..10}; do
+  if curl -sf http://localhost:8000/health > /dev/null; then
+    echo "Health OK"
+    break
+  fi
+  echo "Waiting for health..."
+  sleep 2
+  if [ $i -eq 10 ]; then
+    echo "Health check failed"
+    docker logs pet-api || true
+    exit 1
+  fi
+done
+
+if ! curl -f -X POST -F "file=@scripts/sample.jpg" http://localhost:8000/predict; then
+  echo "Predict failed"
+  docker logs pet-api || true
+  exit 1
+fi
+
+if ! curl -f http://localhost:8000/metrics; then
+  echo "Metrics failed"
+  docker logs pet-api || true
+  exit 1
+fi
 
 echo "[step 8] Stop container and MLflow UI"
 docker stop pet-api
