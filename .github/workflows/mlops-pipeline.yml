@@ -65,6 +65,12 @@ jobs:
       - name: Data Preprocessing
         run: PYTHONPATH=. python scripts/preprocess.py --max-total 10000
 
+      - name: Prepare sample image
+        run: |
+          SAMPLE=$(find data/processed -type f -name "*.jpg" | head -n 1)
+          echo "Using sample: $SAMPLE"
+          cp "$SAMPLE" scripts/sample.jpg
+
       - name: Upload data artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -73,6 +79,7 @@ jobs:
             data/processed
             reports
             mlruns
+            scripts/sample.jpg
 
 #########################################################
 # 4. MODEL TRAINING
@@ -215,7 +222,6 @@ jobs:
 
       - name: Inference Test
         run: |
-          python scripts/create_sample_image.py
           curl -f -X POST http://localhost:${{ env.API_PORT }}/predict \
             -F "file=@scripts/sample.jpg"
 
