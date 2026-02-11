@@ -173,6 +173,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/python-setup
 
       - name: Ensure model exists
         run: |
