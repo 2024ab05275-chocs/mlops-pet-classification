@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+
+kill_port() {
+  local port=$1
+  local pid
+  pid=$(lsof -ti tcp:"$port" 2>/dev/null || true)
+  if [ -n "$pid" ]; then
+    echo "[info] Port $port in use by PID $pid. Killing..."
+    kill -9 $pid || true
+  fi
+}
+
 cd "$(dirname "$0")/.."
 
 if [ -d .venv ]; then
@@ -34,6 +45,7 @@ PYTHONPATH=. python scripts/train.py --epochs 10 --model logreg --image-size 64 
 
 echo "[step 4] Start MLflow UI on port ${MLFLOW_PORT:-5001} (Ctrl+C to stop)"
 MLFLOW_PORT=${MLFLOW_PORT:-5001}
+kill_port $MLFLOW_PORT
 mlflow ui --backend-store-uri ./mlruns --port $MLFLOW_PORT &
 MLFLOW_PID=$!
 
@@ -45,6 +57,7 @@ if docker ps -a --format '{{.Names}}' | grep -q '^pet-api$'; then
   docker rm -f pet-api
 fi
 
+kill_port 8000
 docker run -d -p 8000:8000 --name pet-api pet-classifier:local
 
 sleep 5
