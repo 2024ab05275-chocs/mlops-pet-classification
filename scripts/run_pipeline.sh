@@ -32,8 +32,9 @@ PYTHONPATH=. python scripts/preprocess.py --max-total 10000
 echo "[step 3] Train model and log experiments (MLflow)"
 PYTHONPATH=. python scripts/train.py --epochs 10 --model logreg --image-size 64 --early-stop-patience 3
 
-echo "[step 4] Start MLflow UI (Ctrl+C to stop)"
-mlflow ui --backend-store-uri ./mlruns &
+echo "[step 4] Start MLflow UI on port ${MLFLOW_PORT:-5001} (Ctrl+C to stop)"
+MLFLOW_PORT=${MLFLOW_PORT:-5001}
+mlflow ui --backend-store-uri ./mlruns --port $MLFLOW_PORT &
 MLFLOW_PID=$!
 
 echo "[step 5] Build Docker image"
